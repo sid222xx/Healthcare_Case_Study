@@ -1,0 +1,104 @@
+import numpy as np
+import pandas as pd
+from pathlib import Path
+
+dataset_path = Path(__file__).with_name("healthcare_dataset.csv")
+df = pd.read_csv(dataset_path)
+
+print(df.shape)
+print(df.dtypes)
+print(df.isnull().sum())
+print(df.duplicated().sum())
+print(df.describe()) #statistical summary of the dataset
+
+#data cleaning
+df.drop_duplicates()
+df.duplicated().sum()
+print(df.duplicated().sum())
+
+## Cleaning name columns
+df['Name'] = df['Name'].str.strip().str.title()
+print(df.head())
+
+# fix negative billing amounts
+df.loc[df['Billing Amount'] < 0, 'Billing Amount'] = np.nan
+print(df.head())
+df['Date of Admission'] = pd.to_datetime(df['Date of Admission'])
+df['Discharge Date'] = pd.to_datetime(df['Discharge Date'])
+
+print(df.dtypes)
+#length of stay in days
+
+df['Length_of_Stay'] = (df['Discharge Date'] - df['Date of Admission']).dt.days 
+print(df.head())
+
+#final cleaning check
+print("Negative billing amounts remaining:", int(df['Billing Amount'].lt(0).sum()))
+print("Missing billing amounts:", int(df['Billing Amount'].isna().sum()))
+print("Final dataset shape:", df.shape)
+
+#data analysis and visualization
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+# which medical condition affects the most patients
+condition_counts = df['Medical Condition'].value_counts()
+print(condition_counts)
+plt.figure(figsize=(10,6))
+plt.bar(condition_counts.index, condition_counts.values) #arthritis, diabetes, hypertension, asthma, cancer on x axis and number of patients on y axis
+plt.title('Number of Patients by Medical Condition')
+plt.xlabel('Medical Condition')
+plt.ylabel('Number of Patients')
+plt.xticks(rotation=45)
+plt.show()
+
+# how is patient age distributed across different medical conditions
+df['Age'] = pd.to_numeric(df['Age'], errors='coerce')
+plt.hist(df['Age'], bins=20, edgecolor='black')
+plt.title('Age Distribution of Patients')
+plt.xlabel('Age')
+plt.ylabel('Frequency')
+plt.show()
+
+#how has the average treatment cost changed over time
+average_cost_over_time = df.groupby(df['Date of Admission'].dt.to_period('M'))['Billing Amount'].mean()
+fig, ax = plt.subplots(figsize=(20, 7))
+ax.plot(average_cost_over_time.index.to_timestamp(), average_cost_over_time.values)
+ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+ax.xaxis.set_major_formatter(mdates.DateFormatter('%b\n%Y'))
+ax.tick_params(axis='x', labelsize=8)
+ax.set_title('Average Treatment Cost Over Time')
+ax.set_xlabel('Month')
+ax.set_ylabel('Average Treatment Cost')
+fig.tight_layout()
+plt.show()
+
+# is there a relationship between patient age and treatment cost take a sample of 1000 patients and plot a scatter plot of age vs billing amount
+sample_df = df.sample(n=1000, random_state=42)
+sample_df.plot.scatter(x='Age', y='Billing Amount', alpha=0.5)
+plt.title('Relationship between Patient Age and Treatment Cost')
+plt.xlabel('Age')
+plt.ylabel('Billing Amount')
+plt.show()
+
+#which insurance provider has the highest number of patients
+insurance_counts = df['Insurance Provider'].value_counts()
+print(insurance_counts)
+#make a pie chart of the insurance providers and their patient counts
+plt.figure(figsize=(8,8))
+plt.pie(insurance_counts.values, labels=insurance_counts.index, autopct='%1.1f%%', startangle=140)
+plt.title('Patient Distribution by Insurance Provider')
+plt.show()
+
+#emergency deparment capacity planning: how many patients are admitted to the emergency department each month
+emergency_admissions = df.groupby(df['Date of Admission'].dt.to_period('M')).size()
+print(emergency_admissions)
+
+#identifying high cost patient groups and make a graph of it
+high_cost_patients = df[df['Billing Amount'] > df['Billing Amount'].quantile(0.95)]
+print("Number of high cost patients:", high_cost_patients.shape[0])
+plt.figure(figsize=(10,6))
+plt.hist(high_cost_patients['Age'], bins=20, edgecolor='black')
+plt.title('Age Distribution of High Cost Patients')
+plt.xlabel('Age')
+plt.ylabel('Frequency')
+plt.show()
