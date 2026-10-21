@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Healthcare Admissions Dashboard</title>
+<style>
+:root{color-scheme:light;--bg:#eef3f5;--card:#fff;--ink:#14262e;--mut:#5d7480;--line:#d6e0e5;--ac:#0b7a85;--ac2:#9db4bf;--warn:#b8780f}
+@media(prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#0f1c22;--card:#16272f;--ink:#e6eef1;--mut:#93aab5;--line:#2a3f49;--ac:#3cc0cc;--ac2:#4c6673;--warn:#e0a53a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:28px 20px 40px}
+h1{font:700 30px/1.15 Georgia,"Times New Roman",serif;margin:0 0 6px;max-width:22em}
+.sub{color:var(--mut);margin:0 0 22px}
+.hero{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.card h2{font-size:14px;font-weight:600;margin:0 0 12px}
+.take li{margin:0 0 8px}.take{padding-left:18px;margin:0}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
+.kpi b{display:block;font:700 22px/1.2 Georgia,serif}.kpi span{color:var(--mut);font-size:12.5px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.row{display:grid;grid-template-columns:118px 1fr 58px;align-items:center;gap:8px;margin:7px 0;font-size:13px}
+.trk{background:var(--bg);border-radius:4px;height:14px;overflow:hidden}.fill{height:100%;background:var(--ac);border-radius:4px}
+.row i{font-style:normal;text-align:right;font-variant-numeric:tabular-nums}
+.sp .fill{background:var(--warn)}.sp .row{grid-template-columns:150px 1fr 48px}
+.note{color:var(--mut);font-size:12.5px;margin:8px 0 0}
+svg{width:100%;height:auto;display:block}svg text{fill:var(--mut);font-size:11px}
+h3{font:600 15px/1.3 "Segoe UI",system-ui,sans-serif;margin:22px 0 10px}
+@media(max-width:900px){.hero,.two,.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style></head><body><main>
+<h1>Nothing in the admissions data stands out</h1>
+<p class="sub" id="sub"></p>
+<div class="hero">
+ <div class="card"><h2>What upper management needs to know</h2><ul class="take" id="take"></ul></div>
+ <div class="card sp"><h2>Gap between the highest and lowest group</h2><div id="spread"></div><p class="note">Bars run from 0% to 100%. A short bar means the groups are almost identical.</p></div>
+</div>
+<div class="kpis" id="kpis"></div>
+<div class="grid">
+ <div class="card"><h2>Patients by medical condition</h2><div id="cond"></div></div>
+ <div class="card"><h2>Patients by insurance provider</h2><div id="ins"></div></div>
+ <div class="card"><h2>Patients by age band</h2><div id="age"></div></div>
+</div>
+<div class="two">
+ <div class="card"><h2>Admissions per month</h2><div id="l1"></div></div>
+ <div class="card"><h2>Average bill per admission</h2><div id="l2"></div></div>
+</div>
+<h3>High-cost patients: the top 5% by bill</h3>
+<div class="two">
+ <div class="card"><h2>By medical condition</h2><div id="hcc"></div></div>
+ <div class="card"><h2>By insurance provider</h2><div id="hci"></div></div>
+</div>
+<p class="note" id="foot"></p>
+</main>
+<script>
+const D={"cond": [["Arthritis", 9218, 25543], ["Diabetes", 9216, 25714], ["Hypertension", 9151, 25560], ["Obesity", 9146, 25859], ["Cancer", 9140, 25206], ["Asthma", 9095, 25685]], "ins": [["Cigna", 11139, 25582], ["Medicare", 11039, 25678], ["UnitedHealthcare", 11014, 25459], ["Blue Cross", 10952, 25639], ["Aetna", 10822, 25615]], "adm": [["Elective", 18473, 25663], ["Urgent", 18391, 25568], ["Emergency", 18102, 25551]], "age": [["Under 18", 116], ["18-34", 13485], ["35-49", 12154], ["50-64", 12288], ["65+", 16923]], "m": [["2019-05", 677, 25900], ["2019-06", 899, 26326], ["2019-07", 951, 25929], ["2019-08", 985, 25457], ["2019-09", 924, 24916], ["2019-10", 993, 25996], ["2019-11", 950, 25902], ["2019-12", 921, 25687], ["2020-01", 942, 25862], ["2020-02", 868, 25341], ["2020-03", 924, 25538], ["2020-04", 911, 25224], ["2020-05", 970, 25601], ["2020-06", 924, 26056], ["2020-07", 1000, 24813], ["2020-08", 1003, 25528], ["2020-09", 899, 24882], ["2020-10", 948, 25048], ["2020-11", 900, 25349], ["2020-12", 883, 26221], ["2021-01", 924, 25547], ["2021-02", 828, 25632], ["2021-03", 953, 26078], ["2021-04", 862, 25776], ["2021-05", 893, 25039], ["2021-06", 915, 26104], ["2021-07", 966, 25742], ["2021-08", 887, 25542], ["2021-09", 860, 25193], ["2021-10", 885, 26804], ["2021-11", 899, 25669], ["2021-12", 944, 24995], ["2022-01", 960, 25563], ["2022-02", 772, 24826], ["2022-03", 931, 25853], ["2022-04", 871, 25704], ["2022-05", 885, 25596], ["2022-06", 959, 25283], ["2022-07", 935, 25881], ["2022-08", 948, 25115], ["2022-09", 912, 25716], ["2022-10", 903, 25803], ["2022-11", 886, 26356], ["2022-12", 953, 25251], ["2023-01", 926, 26046], ["2023-02", 873, 25507], ["2023-03", 912, 24474], ["2023-04", 893, 25613], ["2023-05", 918, 24765], ["2023-06", 953, 26100], ["2023-07", 913, 25158], ["2023-08", 962, 25616], ["2023-09", 913, 25701], ["2023-10", 884, 26758], ["2023-11", 873, 25563], ["2023-12", 916, 26104], ["2024-01", 903, 25837], ["2024-02", 869, 25704], ["2024-03", 902, 25310], ["2024-04", 941, 24929]], "hcc": [["Hypertension", 474], ["Arthritis", 465], ["Diabetes", 463], ["Asthma", 462], ["Obesity", 460], ["Cancer", 419]], "hci": [["Medicare", 567], ["Cigna", 555], ["UnitedHealthcare", 546], ["Blue Cross", 545], ["Aetna", 530]], "spread": [["Patients by condition", 1.3], ["Patients by insurer", 2.8], ["Patients by admission type", 2.0], ["Avg bill by condition", 2.5]], "k": {"n": 54966, "tot": 1404121601.3121336, "avg": 25594.63363675052, "los": 15.499290470472657, "age": 51.53518538733035, "emg": 300.6333333333333, "mon": 912.5666666666667, "thr": 47641.281808092106, "hn": 2743, "hage": 51.10390083849799, "corr": -0.0033093695731216542, "lo": 24473.909208954683, "hi": 26803.783466066474, "first": "2019-05", "last": "2024-04"}},K=D.k,f=n=>Math.round(n).toLocaleString('en-US'),usd=n=>'$'+f(n);
+const $=id=>document.getElementById(id);
+$('sub').textContent=f(K.n)+' admissions, '+K.first+' to '+K.last+'. Every breakdown below is close to even.';
+$('take').innerHTML=[
+ 'Volume is spread evenly. The most common condition leads the least common by only '+D.spread[0][1]+'%.',
+ 'Cost is flat. The monthly average bill stays between '+usd(K.lo)+' and '+usd(K.hi)+' with no upward or downward trend.',
+ 'Age does not predict cost (correlation '+K.corr.toFixed(3)+'). The average patient is '+K.age.toFixed(1)+' years old.',
+ 'The '+f(K.hn)+' highest-cost patients (bills above '+usd(K.thr)+') average '+K.hage.toFixed(1)+' years old, the same as everyone else.',
+ 'Demand is steady at about '+f(K.mon)+' admissions a month, with about '+f(K.emg)+' of them emergencies.'
+].map(x=>'<li>'+x+'</li>').join('');
+$('kpis').innerHTML=[[f(K.n),'Admissions'],['$'+(K.tot/1e9).toFixed(2)+'B','Total billing'],[usd(K.avg),'Average bill'],[K.los.toFixed(1)+' days','Average stay'],[K.age.toFixed(1),'Average age'],[f(K.emg),'Emergencies per month']].map(a=>'<div class="card kpi"><b>'+a[0]+'</b><span>'+a[1]+'</span></div>').join('');
+function bars(id,d,fmt,mx){const m=mx||Math.max(...d.map(x=>x[1]));$(id).innerHTML=d.map(x=>'<div class="row"><span>'+x[0]+'</span><div class="trk"><div class="fill" style="width:'+x[1]/m*100+'%"></div></div><i>'+fmt(x[1])+'</i></div>').join('')}
+bars('cond',D.cond,f);bars('ins',D.ins,f);bars('age',D.age,f);bars('hcc',D.hcc,f);bars('hci',D.hci,f);
+bars('spread',D.spread.map(x=>[x[0],x[1]*1]),v=>v.toFixed(1)+'%',100);
+function line(id,v,lab,fmt){const W=600,H=210,l=48,r=8,t=10,b=24,mx=Math.max(...v)*1.12,x=i=>l+i*(W-l-r)/(v.length-1),y=a=>t+(H-t-b)*(1-a/mx),av=v.reduce((a,c)=>a+c,0)/v.length;
+let s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Line chart, y axis starts at zero">';
+[0,.5,1].forEach(p=>{const a=mx/1.12*p;s+='<line x1="'+l+'" x2="'+(W-r)+'" y1="'+y(a)+'" y2="'+y(a)+'" stroke="var(--line)"/><text x="'+(l-6)+'" y="'+(y(a)+4)+'" text-anchor="end">'+fmt(a)+'</text>'});
+lab.forEach((q,i)=>{if(q.endsWith('-01'))s+='<text x="'+x(i)+'" y="'+(H-6)+'" text-anchor="middle">'+q.slice(0,4)+'</text>'});
+s+='<line x1="'+l+'" x2="'+(W-r)+'" y1="'+y(av)+'" y2="'+y(av)+'" stroke="var(--warn)" stroke-dasharray="4 4"/>';
+s+='<polyline fill="none" stroke="var(--ac)" stroke-width="2" points="'+v.map((a,i)=>x(i)+','+y(a)).join(' ')+'"/></svg><p class="note">Dashed line = average ('+fmt(av)+')</p>';$(id).innerHTML=s}
+const L=D.m.map(a=>a[0]);line('l1',D.m.map(a=>a[1]),L,f);line('l2',D.m.map(a=>a[2]),L,usd);
+$('foot').textContent='Full months only; May 2024 is a partial month and is left out of the trend charts. 534 duplicate rows removed and 106 negative bills ignored.';
+</script></body></html>
